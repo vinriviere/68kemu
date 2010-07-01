@@ -1646,12 +1646,35 @@ INLINE void m68ki_exception_trap(uint vector)
 /* Trap#n stacks a 0 frame but behaves like group2 otherwise */
 INLINE void m68ki_exception_trapN(uint vector)
 {
+	if (vector == 33)
+	{
+		extern void m68ki_hook_trap1();
+		m68ki_hook_trap1();
+	}
+	else if (vector == 34)
+	{
+		extern void m68ki_hook_trap2();
+		m68ki_hook_trap2();
+	}
+	else if (vector == 45)
+	{
+		extern void m68ki_hook_trap13();
+		m68ki_hook_trap13();
+	}
+	else if (vector == 46)
+	{
+		extern void m68ki_hook_trap14();
+		m68ki_hook_trap14();
+	}
+	else
+	{
 	uint sr = m68ki_init_exception();
 	m68ki_stack_frame_0000(REG_PC, sr, vector);
 	m68ki_jump_vector(vector);
 
 	/* Use up some clock cycles */
 	USE_CYCLES(CYC_EXCEPTION[vector]);
+	}
 }
 
 /* Exception for trace mode */

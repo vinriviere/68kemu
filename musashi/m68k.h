@@ -141,6 +141,7 @@ typedef enum
  *       USER mode, but it is also slower.
  */
 
+#if 0
 /* Read from anywhere */
 unsigned int  m68k_read_memory_8(unsigned int address);
 unsigned int  m68k_read_memory_16(unsigned int address);
@@ -164,6 +165,7 @@ unsigned int m68k_read_disassembler_32 (unsigned int address);
 void m68k_write_memory_8(unsigned int address, unsigned int value);
 void m68k_write_memory_16(unsigned int address, unsigned int value);
 void m68k_write_memory_32(unsigned int address, unsigned int value);
+#endif
 
 
 
@@ -329,6 +331,7 @@ unsigned int m68k_disassemble(char* str_buff, unsigned int pc, unsigned int cpu_
 
 /* Import the configuration for this build */
 #include "m68kconf.h"
+#include "../m68kinl.h"
 
 
 
