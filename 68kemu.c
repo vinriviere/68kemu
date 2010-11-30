@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <m68k.h>
 #include <m68kcpu.h>
 #include <mint/osbind.h>
@@ -235,6 +236,22 @@ int int_ack_callback(int int_level)
 
 unsigned char systack[64*1024];
 
+void buildCommandTail(char tail[128], char* argv[], int argc)
+{
+	int i;
+	
+	tail[1] = '\0';
+	for (i = 0; i < argc; ++i)
+	{
+		if (i > 0)
+			strcat(tail + 1, " ");
+			
+		strcat(tail + 1, argv[i]);
+	}
+	
+	tail[0] = (char)strlen(tail + 1);
+}
+
 int main(int argc, char* argv[])
 {
 	BASEPAGE* bp;
@@ -246,7 +263,9 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	bp = (BASEPAGE*)Pexec(PE_LOAD, argv[1], "\0", NULL);
+	char tail[128];
+	buildCommandTail(tail, argv + 2, argc - 2);
+	bp = (BASEPAGE*)Pexec(PE_LOAD, argv[1], tail, NULL);
 	if ((long)bp < 0)
 	{
 		fprintf(stderr, "error: cannot load %s.\n", argv[1]);
