@@ -22,6 +22,20 @@ OBJS = $(patsubst %.c,%.o,$(CFILES) $(GENCFILES))
 .PHONY: all
 all:	libmusashi.a
 
+.PHONY: unzip
+unzip: unzip.stamp
+unzip.stamp:
+	unzip ../3rd-party/musashi-3.3.1/musashi331.zip
+	touch $@
+
+.PHONY: patch
+patch: patch.stamp
+patch.stamp: unzip.stamp
+	patch -p1 <musashi.patch
+	touch $@
+
+$(FILES): patch.stamp
+
 m68kmake: $(M68KMAKE_SOURCES)
 	$(NATIVE_CC) $(NATIVE_CFLAGS) $^ -o $@
 
@@ -35,7 +49,7 @@ libmusashi.a: $(OBJS)
 	$(AR) cr $@ $^
 	
 clean:
-	rm -f *.a *.o $(GENFILES) m68kmake
+	rm -f $(filter-out Makefile musashi.patch, $(wildcard *))
 
 # Dependencies
 m68kcpu.c: m68kops.h

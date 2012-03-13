@@ -1,0 +1,105 @@
+diff -aurN musashi.orig/m68k.h musashi/m68k.h
+--- musashi.orig/m68k.h	2012-03-13 00:16:41.800250000 +0100
++++ musashi/m68k.h	2012-03-13 00:18:17.565875000 +0100
+@@ -141,6 +141,7 @@
+  *       USER mode, but it is also slower.
+  */
+ 
++#if 0
+ /* Read from anywhere */
+ unsigned int  m68k_read_memory_8(unsigned int address);
+ unsigned int  m68k_read_memory_16(unsigned int address);
+@@ -164,6 +165,7 @@
+ void m68k_write_memory_8(unsigned int address, unsigned int value);
+ void m68k_write_memory_16(unsigned int address, unsigned int value);
+ void m68k_write_memory_32(unsigned int address, unsigned int value);
++#endif
+ 
+ 
+ 
+@@ -329,6 +331,7 @@
+ 
+ /* Import the configuration for this build */
+ #include "m68kconf.h"
++#include "../m68kinl.h"
+ 
+ 
+ 
+diff -aurN musashi.orig/m68kconf.h musashi/m68kconf.h
+--- musashi.orig/m68kconf.h	2012-03-13 00:16:54.097125000 +0100
++++ musashi/m68kconf.h	2012-03-13 00:18:18.159625000 +0100
+@@ -58,8 +58,8 @@
+ /* ======================================================================== */
+ 
+ /* Turn on if you want to use the following M68K variants */
+-#define M68K_EMULATE_010            OPT_ON
+-#define M68K_EMULATE_EC020          OPT_ON
++#define M68K_EMULATE_010            OPT_OFF
++#define M68K_EMULATE_EC020          OPT_OFF
+ #define M68K_EMULATE_020            OPT_ON
+ 
+ 
+@@ -75,7 +75,7 @@
+  * If off, all interrupts will be autovectored and all interrupt requests will
+  * auto-clear when the interrupt is serviced.
+  */
+-#define M68K_EMULATE_INT_ACK        OPT_OFF
++#define M68K_EMULATE_INT_ACK        OPT_ON
+ #define M68K_INT_ACK_CALLBACK(A)    your_int_ack_handler_function(A)
+ 
+ 
+diff -aurN musashi.orig/m68kcpu.c musashi/m68kcpu.c
+--- musashi.orig/m68kcpu.c	2012-03-13 00:17:28.065875000 +0100
++++ musashi/m68kcpu.c	2012-03-13 00:18:18.581500000 +0100
+@@ -768,10 +768,12 @@
+ #endif /* M68K_EMULATE_PREFETCH */
+ 
+ 	/* Read the initial stack pointer and program counter */
++/*
+ 	m68ki_jump(0);
+ 	REG_SP = m68ki_read_imm_32();
+ 	REG_PC = m68ki_read_imm_32();
+ 	m68ki_jump(REG_PC);
++*/
+ }
+ 
+ /* Pulse the HALT line on the CPU */
+diff -aurN musashi.orig/m68kcpu.h musashi/m68kcpu.h
+--- musashi.orig/m68kcpu.h	2012-03-13 00:17:02.628375000 +0100
++++ musashi/m68kcpu.h	2012-03-13 00:18:19.003375000 +0100
+@@ -1646,12 +1646,35 @@
+ /* Trap#n stacks a 0 frame but behaves like group2 otherwise */
+ INLINE void m68ki_exception_trapN(uint vector)
+ {
++	if (vector == 33)
++	{
++		extern void m68ki_hook_trap1();
++		m68ki_hook_trap1();
++	}
++	else if (vector == 34)
++	{
++		extern void m68ki_hook_trap2();
++		m68ki_hook_trap2();
++	}
++	else if (vector == 45)
++	{
++		extern void m68ki_hook_trap13();
++		m68ki_hook_trap13();
++	}
++	else if (vector == 46)
++	{
++		extern void m68ki_hook_trap14();
++		m68ki_hook_trap14();
++	}
++	else
++	{
+ 	uint sr = m68ki_init_exception();
+ 	m68ki_stack_frame_0000(REG_PC, sr, vector);
+ 	m68ki_jump_vector(vector);
+ 
+ 	/* Use up some clock cycles */
+ 	USE_CYCLES(CYC_EXCEPTION[vector]);
++	}
+ }
+ 
+ /* Exception for trace mode */
