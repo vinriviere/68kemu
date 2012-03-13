@@ -1,3 +1,5 @@
+	.cpu 68020
+
 // 0(sp).l = ret pc
 // 4(sp).w = 0x26
 // 6(sp).l = callback

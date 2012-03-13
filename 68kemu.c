@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <m68k.h>
-#include <m68kcpu.h>
 #include <mint/osbind.h>
 #include <mint/basepage.h>
-#include "tosex.h"
+#include "musashi/m68k.h"
+#include "musashi/m68kcpu.h"
 
 static void* old_ssp_real;
 
@@ -15,7 +14,7 @@ static void* BothSuperFromUser(void* new_ssp_emu)
 	void* old_ssp_emu;
 
 	// Switch the real CPU to supervisor mode
-	old_ssp_real = (void *)SuperFromUser();
+	old_ssp_real = (void *)Super(SUP_SET);
 
 	// Switch the emulated CPU to supervisor mode
 	if (new_ssp_emu == NULL)
@@ -62,7 +61,7 @@ void m68ki_hook_trap1()
 		
 		if (param != (void*)1)
 		{
-			long current_super = SuperInquire();
+			long current_super = Super(SUP_INQUIRE);
 			if (current_super)
 			{
 				BothSuperToUser(param);
