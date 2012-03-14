@@ -1710,6 +1710,10 @@ INLINE void m68ki_exception_privilege_violation(void)
 /* Exception for A-Line instructions */
 INLINE void m68ki_exception_1010(void)
 {
+	extern void m68ki_hook_linea();
+	m68ki_hook_linea();
+#if 0
+	}
 	uint sr;
 #if M68K_LOG_1010_1111 == OPT_ON
 	M68K_DO_LOG_EMU((M68K_LOG_FILEHANDLE "%s at %08x: called 1010 instruction %04x (%s)\n",
@@ -1723,6 +1727,7 @@ INLINE void m68ki_exception_1010(void)
 
 	/* Use up some clock cycles and undo the instruction's cycles */
 	USE_CYCLES(CYC_EXCEPTION[EXCEPTION_1010] - CYC_INSTRUCTION[REG_IR]);
+#endif
 }
 
 /* Exception for F-Line instructions */

@@ -225,6 +225,72 @@ void m68ki_hook_trap14()
 	m68k_set_reg(M68K_REG_D0, (int)reg_d0);
 }
 
+void m68ki_hook_linea()
+{
+	unsigned short* pc = (unsigned short *)m68k_get_reg(NULL, M68K_REG_PC);
+	unsigned short* sp = (unsigned short *)m68k_get_reg(NULL, M68K_REG_SP);
+	register long reg_d0 __asm__("d0");
+	register long reg_a0 __asm__("a0");
+	register long reg_a1 __asm__("a1");
+	register long reg_a2 __asm__("a2");
+	unsigned short opcode = pc[-1];
+	unsigned short num = opcode & 0x000f;
+	
+	//printf("Line A %u 0x%04x\n", num, opcode);
+
+	__asm__ volatile
+	(
+		"move.l	 sp,a3\n\t"
+		"move.l	 %4,sp\n\t"
+		"moveq	 #0,d0\n\t"
+		"move.w	 %5,d0\n\t"
+		"lsl.l   #2,d0\n\t"
+		"jmp     0f(pc,d0.l)\n\t"
+		"0:\n\t"
+		".dc.w   0xa920\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa921\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa922\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa923\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa924\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa925\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa926\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa927\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa928\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa929\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa92a\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa92b\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa92c\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa92d\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa92e\n\t"
+		"bra.s   1f\n\t"
+		".dc.w   0xa92f\n\t"
+		"1:\n\t"
+		"move.l	a3,sp"
+	: "=r"(reg_d0), "=r"(reg_a0), "=r"(reg_a1), "=r"(reg_a2) /* outputs */
+	: "g"(sp), "g"(num)
+	: "d1", "d2", "a3", "memory"    /* clobbered regs */
+	);
+	
+	m68k_set_reg(M68K_REG_D0, (int)reg_d0);
+	m68k_set_reg(M68K_REG_A0, (int)reg_a0);
+	m68k_set_reg(M68K_REG_A1, (int)reg_a1);
+	m68k_set_reg(M68K_REG_A2, (int)reg_a2);
+}
+
 static int int_ack_callback_vector = M68K_INT_ACK_AUTOVECTOR;
 
 // Exception vector callback

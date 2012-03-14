@@ -38,4 +38,7 @@ clean:
 	rm -f *.a *.o $(GENFILES) m68kmake
 
 # Dependencies
-m68kcpu.c: m68kops.h
+m68kcpu.o: m68kops.h m68kcpu.h
+m68kopac.o: m68kcpu.h
+m68kopdm.o: m68kcpu.h
+m68kopnz.o: m68kcpu.h

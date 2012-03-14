@@ -24,7 +24,7 @@ musashi.stamp:
 	cd musashi && $(MAKE) libmusashi.a
 	touch $@
 	
-$(TARGET): musashi.stamp $(OBJS)
+$(TARGET): musashi.stamp $(OBJS) $(LIBS)
 	$(CC) $(CPUFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
 
 .PHONY = clean
