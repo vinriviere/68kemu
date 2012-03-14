@@ -1,4 +1,4 @@
-	.cpu 68020
+	.cpu 68000
 
 // 0(sp).l = ret pc
 // 4(sp).w = 0x26
@@ -48,5 +48,7 @@ super:
 endf:
         movem.l  (sp)+,d3-d7/a3-a6
         rts
+/*
 format:
 	.asciz "a0 = 0x%08lx\n"
+*/

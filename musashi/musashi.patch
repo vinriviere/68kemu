@@ -64,9 +64,8 @@ diff -aurN musashi.orig/m68kcpu.c musashi/m68kcpu.c
  }
  
  /* Pulse the HALT line on the CPU */
-diff -aurN musashi.orig/m68kcpu.h musashi/m68kcpu.h
---- musashi.orig/m68kcpu.h	2012-03-13 00:17:02.628375000 +0100
-+++ musashi/m68kcpu.h	2012-03-13 00:18:19.003375000 +0100
+--- musashi.orig/m68kcpu.h	2001-01-30 09:49:24.000000000 +0100
++++ musashi/m68kcpu.h	2012-03-14 01:45:21.187500000 +0100
 @@ -1646,12 +1646,35 @@
  /* Trap#n stacks a 0 frame but behaves like group2 otherwise */
  INLINE void m68ki_exception_trapN(uint vector)
@@ -103,3 +102,22 @@ diff -aurN musashi.orig/m68kcpu.h musashi/m68kcpu.h
  }
  
  /* Exception for trace mode */
+@@ -1687,6 +1710,10 @@
+ /* Exception for A-Line instructions */
+ INLINE void m68ki_exception_1010(void)
+ {
++	extern void m68ki_hook_linea();
++	m68ki_hook_linea();
++#if 0
++	}
+ 	uint sr;
+ #if M68K_LOG_1010_1111 == OPT_ON
+ 	M68K_DO_LOG_EMU((M68K_LOG_FILEHANDLE "%s at %08x: called 1010 instruction %04x (%s)\n",
+@@ -1700,6 +1727,7 @@
+ 
+ 	/* Use up some clock cycles and undo the instruction's cycles */
+ 	USE_CYCLES(CYC_EXCEPTION[EXCEPTION_1010] - CYC_INSTRUCTION[REG_IR]);
++#endif
+ }
+ 
+ /* Exception for F-Line instructions */
