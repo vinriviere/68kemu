@@ -1,3 +1,23 @@
+# musashi/Makefile
+# Written in 2010-2012 by Vincent Riviere <vincent.riviere@freesbee.fr>
+#
+# This file is part of:
+# 68Kemu - A CPU emulator for Atari TOS computers
+# http://vincent.riviere.free.fr/soft/68kemu/
+#
+# To the extent possible under law, the author(s) have dedicated all copyright
+# and related and neighboring rights to this software to the public domain
+# worldwide. This software is distributed without any warranty.
+#
+# You should have received a copy of the CC0 Public Domain Dedication along
+# with this software.
+# If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+
+# Warning: The purpose of this Makefile is to build the Musashi CPU emulator,
+# which is Copyright 1998-2001 Karl Stenerud and provided with its own license.
+# There are restrictions for using and redistributing Musashi.
+# See readme.txt in 3rd-party/musashi-3.3.1/musashi331.zip for details.
+
 CC = m68k-atari-mint-gcc
 CPUFLAGS = -mcpu=5475
 CFLAGS = -Wall -O3 -fomit-frame-pointer
