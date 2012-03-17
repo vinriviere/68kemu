@@ -1,3 +1,20 @@
+/*
+  68kemu.c
+  Written in 2010-2012 by Vincent Riviere <vincent.riviere@freesbee.fr>
+
+  This file is part of:
+  68Kemu - A CPU emulator for Atari TOS computers
+  http://vincent.riviere.free.fr/soft/68kemu/
+
+  To the extent possible under law, the author(s) have dedicated all copyright
+  and related and neighboring rights to this software to the public domain
+  worldwide. This software is distributed without any warranty.
+
+  You should have received a copy of the CC0 Public Domain Dedication along
+  with this software.
+  If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,131 +27,131 @@ static void* old_ssp_real;
 
 static void* BothSuperFromUser(void* new_ssp_emu)
 {
-	unsigned short sr;
-	void* old_ssp_emu;
+    unsigned short sr;
+    void* old_ssp_emu;
 
-	// Switch the real CPU to supervisor mode
-	old_ssp_real = (void *)Super(SUP_SET);
+    // Switch the real CPU to supervisor mode
+    old_ssp_real = (void *)Super(SUP_SET);
 
-	// Switch the emulated CPU to supervisor mode
-	if (new_ssp_emu == NULL)
-		new_ssp_emu = (void*)m68k_get_reg(NULL, M68K_REG_SP);
+    // Switch the emulated CPU to supervisor mode
+    if (new_ssp_emu == NULL)
+        new_ssp_emu = (void*)m68k_get_reg(NULL, M68K_REG_SP);
 
-	sr = (unsigned short)m68k_get_reg(NULL, M68K_REG_SR);
-	sr |= 0x2000;
-	m68k_set_reg(M68K_REG_SR, sr);
+    sr = (unsigned short)m68k_get_reg(NULL, M68K_REG_SR);
+    sr |= 0x2000;
+    m68k_set_reg(M68K_REG_SR, sr);
 
-	old_ssp_emu = (void*)m68k_get_reg(NULL, M68K_REG_SP);
-	m68k_set_reg(M68K_REG_SP, (int)new_ssp_emu);
-	m68k_set_reg(M68K_REG_D0, (int)old_ssp_emu);
-	
-	return old_ssp_emu;
+    old_ssp_emu = (void*)m68k_get_reg(NULL, M68K_REG_SP);
+    m68k_set_reg(M68K_REG_SP, (int)new_ssp_emu);
+    m68k_set_reg(M68K_REG_D0, (int)old_ssp_emu);
+    
+    return old_ssp_emu;
 }
 
 static void BothSuperToUser(void* old_ssp_emu)
 {
-	unsigned short sr;
+    unsigned short sr;
 
-	// Switch the real CPU to user mode
-	SuperToUser(old_ssp_real);
+    // Switch the real CPU to user mode
+    SuperToUser(old_ssp_real);
 
-	m68k_set_reg(M68K_REG_SP, (int)old_ssp_emu);
+    m68k_set_reg(M68K_REG_SP, (int)old_ssp_emu);
 
-	sr = (unsigned short)m68k_get_reg(NULL, M68K_REG_SR);
-	sr &= ~0x2000;
-	m68k_set_reg(M68K_REG_SR, sr);
+    sr = (unsigned short)m68k_get_reg(NULL, M68K_REG_SR);
+    sr &= ~0x2000;
+    m68k_set_reg(M68K_REG_SR, sr);
 
-	m68k_set_reg(M68K_REG_D0, (int)0);
+    m68k_set_reg(M68K_REG_D0, (int)0);
 }
 
 void m68ki_hook_trap1()
 {
-	unsigned short* sp = (unsigned short *)m68k_get_reg(NULL, M68K_REG_SP);
-	unsigned short num = *sp;
+    unsigned short* sp = (unsigned short *)m68k_get_reg(NULL, M68K_REG_SP);
+    unsigned short num = *sp;
 
-	//printf("GEMDOS(0x%02x)\n", num);
+    //printf("GEMDOS(0x%02x)\n", num);
 
-	if (num == 0x20)
-	{
-		void* param = *(void**)(sp + 1);
-		//printf("Super(0x%08lx)\n", (long)param);
-		
-		if (param != (void*)1)
-		{
-			long current_super = Super(SUP_INQUIRE);
-			if (current_super)
-			{
-				BothSuperToUser(param);
-				return;
-			}
-			else /* current user */
-			{
-				BothSuperFromUser(param);
-				return;
-			}
-		}
-	}
+    if (num == 0x20)
+    {
+        void* param = *(void**)(sp + 1);
+        //printf("Super(0x%08lx)\n", (long)param);
+        
+        if (param != (void*)1)
+        {
+            long current_super = Super(SUP_INQUIRE);
+            if (current_super)
+            {
+                BothSuperToUser(param);
+                return;
+            }
+            else /* current user */
+            {
+                BothSuperFromUser(param);
+                return;
+            }
+        }
+    }
 
-	// Standard block
-	{
-		register long reg_d0 __asm__("d0");
+    // Standard block
+    {
+        register long reg_d0 __asm__("d0");
 
-		__asm__ volatile
-		(
-			"move.l	sp,a3\n\t"
-			"move.l	%1,sp\n\t"
-			"trap	#1\n\t"
-			"move.l	a3,sp"
-		: "=r"(reg_d0)			/* outputs */
-		: "g"(sp)
-		: "d1", "d2", "a0", "a1", "a2", "a3", "memory"    /* clobbered regs */
-		);
-		
-		m68k_set_reg(M68K_REG_D0, (int)reg_d0);
-	}
+        __asm__ volatile
+        (
+            "move.l	sp,a3\n\t"
+            "move.l	%1,sp\n\t"
+            "trap	#1\n\t"
+            "move.l	a3,sp"
+        : "=r"(reg_d0)			/* outputs */
+        : "g"(sp)
+        : "d1", "d2", "a0", "a1", "a2", "a3", "memory"    /* clobbered regs */
+        );
+        
+        m68k_set_reg(M68K_REG_D0, (int)reg_d0);
+    }
 }
 
 void m68ki_hook_trap2()
 {
-	void* sp = (void*)m68k_get_reg(NULL, M68K_REG_SP);
-	unsigned long ad0 = (unsigned long)m68k_get_reg(NULL, M68K_REG_D0);
-	unsigned long ad1 = (unsigned long)m68k_get_reg(NULL, M68K_REG_D1);
+    void* sp = (void*)m68k_get_reg(NULL, M68K_REG_SP);
+    unsigned long ad0 = (unsigned long)m68k_get_reg(NULL, M68K_REG_D0);
+    unsigned long ad1 = (unsigned long)m68k_get_reg(NULL, M68K_REG_D1);
 
-	//printf("GEM\n");
-	__asm__ volatile
-	(
-		"move.l	sp,a3\n\t"
-		"move.l	%1,d0\n\t"
-		"move.l	%2,d1\n\t"
-		"move.l	%0,sp\n\t"
-		"trap	#2\n\t"
-		"move.l	a3,sp"
-	: 			/* outputs */
-	: "g"(sp), "g"(ad0), "g"(ad1)
-	: "d0", "d1", "d2", "a0", "a1", "a2", "a3", "memory"    /* clobbered regs */
-	);
+    //printf("GEM\n");
+    __asm__ volatile
+    (
+        "move.l	sp,a3\n\t"
+        "move.l	%1,d0\n\t"
+        "move.l	%2,d1\n\t"
+        "move.l	%0,sp\n\t"
+        "trap	#2\n\t"
+        "move.l	a3,sp"
+    : /* outputs */
+    : "g"(sp), "g"(ad0), "g"(ad1)
+    : "d0", "d1", "d2", "a0", "a1", "a2", "a3", "memory" /* clobbered regs */
+    );
 }
 
 void m68ki_hook_trap13()
 {
-	unsigned short* sp = (unsigned short *)m68k_get_reg(NULL, M68K_REG_SP);
-	//unsigned short num = *sp;
-	register long reg_d0 __asm__("d0");
+    unsigned short* sp = (unsigned short *)m68k_get_reg(NULL, M68K_REG_SP);
+    //unsigned short num = *sp;
+    register long reg_d0 __asm__("d0");
 
-	//printf("BIOS(0x%02x)\n", num);
+    //printf("BIOS(0x%02x)\n", num);
 
-	__asm__ volatile
-	(
-		"move.l	sp,a3\n\t"
-		"move.l	%1,sp\n\t"
-		"trap	#13\n\t"
-		"move.l	a3,sp"
-	: "=r"(reg_d0)			/* outputs */
-	: "g"(sp)
-	: "d1", "d2", "a0", "a1", "a2", "a3", "memory"    /* clobbered regs */
-	);
-	
-	m68k_set_reg(M68K_REG_D0, (int)reg_d0);
+    __asm__ volatile
+    (
+        "move.l	sp,a3\n\t"
+        "move.l	%1,sp\n\t"
+        "trap	#13\n\t"
+        "move.l	a3,sp"
+    : "=r"(reg_d0)			/* outputs */
+    : "g"(sp)
+    : "d1", "d2", "a0", "a1", "a2", "a3", "memory"    /* clobbered regs */
+    );
+    
+    m68k_set_reg(M68K_REG_D0, (int)reg_d0);
 }
 
 typedef void VOIDFUNC(void);
@@ -144,10 +161,10 @@ VOIDFUNC* nextCallback = NULL;
 // This callback is called from the real CPU
 void generic_callback(void)
 {
-	if (nextCallback == NULL)
-		abort();
+    if (nextCallback == NULL)
+        abort();
 
-	// TODO
+    // TODO
 }
 */
 
@@ -156,7 +173,7 @@ typedef unsigned long SUPEXEC_TYPE(SUPEXEC_CALLBACK_TYPE* f);
 /*
 static unsigned long RunEmulatedFunction(SUPEXEC_TYPE* f, SUPEXEC_CALLBACK_TYPE* param)
 {
-	return f(param);
+    return f(param);
 }
 */
 //unsigned long SupexecImpl(SUPEXEC_CALLBACK_TYPE* f);
@@ -166,129 +183,129 @@ void SupexecImpl(void);
 // This function is run on the emulated CPU
 unsigned long SupexecImpl(SUPEXEC_CALLBACK_TYPE* f)
 {
-	long from_super = SuperInquire();
-	void* old_ssp;
-	unsigned long ret;
+    long from_super = SuperInquire();
+    void* old_ssp;
+    unsigned long ret;
 
-	if (!from_super)
-		old_ssp = SuperFromUser();
+    if (!from_super)
+        old_ssp = SuperFromUser();
 
-	ret = f();
+    ret = f();
 
-	if (!from_super)
-		SuperToUser(old_ssp);
-		
-	return ret;
+    if (!from_super)
+        SuperToUser(old_ssp);
+        
+    return ret;
 }
 */
 void m68ki_hook_trap14()
 {
-	unsigned char* sp = (unsigned char *)m68k_get_reg(NULL, M68K_REG_SP);
-	unsigned short num = *(unsigned short*)sp;
-	register long reg_d0 __asm__("d0");
+    unsigned char* sp = (unsigned char *)m68k_get_reg(NULL, M68K_REG_SP);
+    unsigned short num = *(unsigned short*)sp;
+    register long reg_d0 __asm__("d0");
 
-	//printf("XBIOS(0x%02x)\n", num);
+    //printf("XBIOS(0x%02x)\n", num);
 
-	if (num == 0x26)
-	{
-		//SUPEXEC_CALLBACK_TYPE* pCallback = *(SUPEXEC_CALLBACK_TYPE**)(sp + 2);
-		//unsigned long ret;
-		unsigned long* sp;
-		void* pc;
+    if (num == 0x26)
+    {
+        //SUPEXEC_CALLBACK_TYPE* pCallback = *(SUPEXEC_CALLBACK_TYPE**)(sp + 2);
+        //unsigned long ret;
+        unsigned long* sp;
+        void* pc;
 
-		//printf("Supexec(0x%08lx)\n", (unsigned long)pCallback);
-		//ret = RunEmulatedFunction(SupexecImpl, pCallback);
-		//m68k_set_reg(M68K_REG_D0, (int)ret);
-		pc = (void*)m68k_get_reg(NULL, M68K_REG_PC);
-		//printf("*pc = 0x%04x\n", *(((unsigned short*)pc)-1));
-		//return;
-		sp = (unsigned long*)m68k_get_reg(NULL, M68K_REG_SP);
-		*--sp = (unsigned long)pc;
-		m68k_set_reg(M68K_REG_SP, (int)sp);
-		m68k_set_reg(M68K_REG_PC, (int)SupexecImpl);
-		return;
-	}
-	
-	__asm__ volatile
-	(
-		"move.l	sp,a3\n\t"
-		"move.l	%1,sp\n\t"
-		"trap	#14\n\t"
-		"move.l	a3,sp"
-	: "=r"(reg_d0)			/* outputs */
-	: "g"(sp)
-	: "d1", "d2", "a0", "a1", "a2", "a3", "memory"    /* clobbered regs */
-	);
-	
-	//nextCallback = NULL;
-	
-	m68k_set_reg(M68K_REG_D0, (int)reg_d0);
+        //printf("Supexec(0x%08lx)\n", (unsigned long)pCallback);
+        //ret = RunEmulatedFunction(SupexecImpl, pCallback);
+        //m68k_set_reg(M68K_REG_D0, (int)ret);
+        pc = (void*)m68k_get_reg(NULL, M68K_REG_PC);
+        //printf("*pc = 0x%04x\n", *(((unsigned short*)pc)-1));
+        //return;
+        sp = (unsigned long*)m68k_get_reg(NULL, M68K_REG_SP);
+        *--sp = (unsigned long)pc;
+        m68k_set_reg(M68K_REG_SP, (int)sp);
+        m68k_set_reg(M68K_REG_PC, (int)SupexecImpl);
+        return;
+    }
+    
+    __asm__ volatile
+    (
+        "move.l	sp,a3\n\t"
+        "move.l	%1,sp\n\t"
+        "trap	#14\n\t"
+        "move.l	a3,sp"
+    : "=r"(reg_d0) /* outputs */
+    : "g"(sp)
+    : "d1", "d2", "a0", "a1", "a2", "a3", "memory" /* clobbered regs */
+    );
+    
+    //nextCallback = NULL;
+    
+    m68k_set_reg(M68K_REG_D0, (int)reg_d0);
 }
 
 void m68ki_hook_linea()
 {
-	unsigned short* pc = (unsigned short *)m68k_get_reg(NULL, M68K_REG_PC);
-	unsigned short* sp = (unsigned short *)m68k_get_reg(NULL, M68K_REG_SP);
-	register long reg_d0 __asm__("d0");
-	register long reg_a0 __asm__("a0");
-	register long reg_a1 __asm__("a1");
-	register long reg_a2 __asm__("a2");
-	unsigned short opcode = pc[-1];
-	unsigned short num = opcode & 0x000f;
-	
-	//printf("Line A %u 0x%04x\n", num, opcode);
+    unsigned short* pc = (unsigned short *)m68k_get_reg(NULL, M68K_REG_PC);
+    unsigned short* sp = (unsigned short *)m68k_get_reg(NULL, M68K_REG_SP);
+    register long reg_d0 __asm__("d0");
+    register long reg_a0 __asm__("a0");
+    register long reg_a1 __asm__("a1");
+    register long reg_a2 __asm__("a2");
+    unsigned short opcode = pc[-1];
+    unsigned short num = opcode & 0x000f;
+    
+    //printf("Line A %u 0x%04x\n", num, opcode);
 
-	__asm__ volatile
-	(
-		"move.l	 sp,a3\n\t"
-		"move.l	 %4,sp\n\t"
-		"moveq	 #0,d0\n\t"
-		"move.w	 %5,d0\n\t"
-		"lsl.l   #2,d0\n\t"
-		"jmp     0f(pc,d0.l)\n\t"
-		"0:\n\t"
-		".dc.w   0xa920\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa921\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa922\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa923\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa924\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa925\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa926\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa927\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa928\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa929\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa92a\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa92b\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa92c\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa92d\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa92e\n\t"
-		"bra.s   1f\n\t"
-		".dc.w   0xa92f\n\t"
-		"1:\n\t"
-		"move.l	a3,sp"
-	: "=r"(reg_d0), "=r"(reg_a0), "=r"(reg_a1), "=r"(reg_a2) /* outputs */
-	: "g"(sp), "g"(num)
-	: "d1", "d2", "a3", "memory"    /* clobbered regs */
-	);
-	
-	m68k_set_reg(M68K_REG_D0, (int)reg_d0);
-	m68k_set_reg(M68K_REG_A0, (int)reg_a0);
-	m68k_set_reg(M68K_REG_A1, (int)reg_a1);
-	m68k_set_reg(M68K_REG_A2, (int)reg_a2);
+    __asm__ volatile
+    (
+        "move.l	 sp,a3\n\t"
+        "move.l	 %4,sp\n\t"
+        "moveq	 #0,d0\n\t"
+        "move.w	 %5,d0\n\t"
+        "lsl.l   #2,d0\n\t"
+        "jmp     0f(pc,d0.l)\n\t"
+        "0:\n\t"
+        ".dc.w   0xa920\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa921\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa922\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa923\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa924\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa925\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa926\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa927\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa928\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa929\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa92a\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa92b\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa92c\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa92d\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa92e\n\t"
+        "bra.s   1f\n\t"
+        ".dc.w   0xa92f\n\t"
+        "1:\n\t"
+        "move.l	a3,sp"
+    : "=r"(reg_d0), "=r"(reg_a0), "=r"(reg_a1), "=r"(reg_a2) /* outputs */
+    : "g"(sp), "g"(num)
+    : "d1", "d2", "a3", "memory"    /* clobbered regs */
+    );
+    
+    m68k_set_reg(M68K_REG_D0, (int)reg_d0);
+    m68k_set_reg(M68K_REG_A0, (int)reg_a0);
+    m68k_set_reg(M68K_REG_A1, (int)reg_a1);
+    m68k_set_reg(M68K_REG_A2, (int)reg_a2);
 }
 
 static int int_ack_callback_vector = M68K_INT_ACK_AUTOVECTOR;
@@ -296,64 +313,80 @@ static int int_ack_callback_vector = M68K_INT_ACK_AUTOVECTOR;
 // Exception vector callback
 int int_ack_callback(int int_level)
 {
-	return int_ack_callback_vector;
+    return int_ack_callback_vector;
 }
 
 unsigned char systack[64*1024];
 
 void buildCommandTail(char tail[128], char* argv[], int argc)
 {
-	int i;
-	
-	tail[1] = '\0';
-	for (i = 0; i < argc; ++i)
-	{
-		if (i > 0)
-			strcat(tail + 1, " ");
-			
-		strcat(tail + 1, argv[i]);
-	}
-	
-	tail[0] = (char)strlen(tail + 1);
+    int i;
+    
+    tail[1] = '\0';
+    for (i = 0; i < argc; ++i)
+    {
+        if (i > 0)
+            strcat(tail + 1, " ");
+            
+        strcat(tail + 1, argv[i]);
+    }
+    
+    tail[0] = (char)strlen(tail + 1);
 }
 
 int main(int argc, char* argv[])
 {
-	BASEPAGE* bp;
-	unsigned long* pStack;
+    BASEPAGE* bp;
+    unsigned long* pStack;
 
-	if (argc < 2)
-	{
-		fprintf(stderr, "usage: %s <program.tos> [arguments...]\n", argv[0]);
-		return 1;
-	}
+    if (argc < 2)
+    {
+        fprintf(stderr, "usage: %s <program.tos> [arguments...]\n", argv[0]);
 
-	char tail[128];
-	buildCommandTail(tail, argv + 2, argc - 2);
-	bp = (BASEPAGE*)Pexec(PE_LOAD, argv[1], tail, NULL);
-	if ((long)bp < 0)
-	{
-		fprintf(stderr, "error: cannot load %s.\n", argv[1]);
-		return 1;
-	}
+        fputs(
+          "\033E" // Clear screen
+          "68Kemu 20120317 ALPHA - A CPU emulator for Atari TOS computers\n"
+          "Homepage: http://vincent.riviere.free.fr/soft/68kemu/\n"
+          "Written in 2010-2012 by Vincent Riviere <vincent.riviere@freesbee.fr>\n"
+          "\n"
+          "Based on the Musashi M680x0 emulator Copyright 1998-2001 Karl Stenerud.\n"
+          "Usage and redistribution are free for any non-commercial purpose.\n"
+          "Please contact the authors for commercial usage and redistribution.\n"
+          "\n"
+          "Press any key.\n"
+          , stderr);
 
-	m68k_set_cpu_type(M68K_CPU_TYPE_68020);
-	m68k_pulse_reset(); // Patched
-	//m68k_set_int_ack_callback(int_ack_callback);
-	
-	pStack = (unsigned long*)bp->p_hitpa;
-	*--pStack = (unsigned long)bp;
-	*--pStack = (unsigned long)0;
-	
-	m68k_set_reg(M68K_REG_SP, (int)(systack + 1));
-	m68k_set_reg(M68K_REG_SR, 0x0300);
-	m68k_set_reg(M68K_REG_SP, (int)pStack);
-	m68k_set_reg(M68K_REG_PC, (int)bp->p_tbase);
+        Cnecin();
 
-	for (;;)
-	{
-		m68k_execute(10000);
-	}
-	
-	return 0;
+        return 1;
+    }
+
+    char tail[128];
+    buildCommandTail(tail, argv + 2, argc - 2);
+    bp = (BASEPAGE*)Pexec(PE_LOAD, argv[1], tail, NULL);
+    if ((long)bp < 0)
+    {
+        fprintf(stderr, "error: cannot load %s.\n", argv[1]);
+        return 1;
+    }
+
+    m68k_set_cpu_type(M68K_CPU_TYPE_68020);
+    m68k_pulse_reset(); // Patched
+    //m68k_set_int_ack_callback(int_ack_callback);
+    
+    pStack = (unsigned long*)bp->p_hitpa;
+    *--pStack = (unsigned long)bp;
+    *--pStack = (unsigned long)0;
+    
+    m68k_set_reg(M68K_REG_SP, (int)(systack + 1));
+    m68k_set_reg(M68K_REG_SR, 0x0300);
+    m68k_set_reg(M68K_REG_SP, (int)pStack);
+    m68k_set_reg(M68K_REG_PC, (int)bp->p_tbase);
+
+    for (;;)
+    {
+        m68k_execute(10000);
+    }
+    
+    return 0;
 }
