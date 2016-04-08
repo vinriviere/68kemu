@@ -51,7 +51,8 @@ unzip.stamp:
 .PHONY: patch
 patch: patch.stamp
 patch.stamp: unzip.stamp
-	patch -p1 <musashi.patch
+	# Use binary patch because Musashi sources use CR/LF line endings
+	patch -p1 --binary <musashi.patch
 	touch $@
 
 $(FILES): patch.stamp
